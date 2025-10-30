@@ -2,7 +2,7 @@ from flask import Flask, request
 from dotenv import load_dotenv
 import smtplib
 from email.mime.text import MIMEText
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 from flask_cors import CORS
 import threading
@@ -33,6 +33,10 @@ def eh_bot(user_agent_string):
 
 # Envia relatório diário por e-mail
 def enviar_relatorio_diario():
+    if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+        print("Configuração de e-mail não encontrada. Verifique o arquivo .env")
+        return
+        
     with bloqueio:
         if not visitas:
             print("Nenhuma visita para relatar hoje.")
@@ -42,7 +46,7 @@ def enviar_relatorio_diario():
         total_visitas = len(visitas)
         detalhes_visitas = ""
         for visita in visitas:
-            detalhes_visitas += f"<p>Visita em: {visita['tempo'].strftime('%d/%m/%Y %H:%M:%S')}|</p>"
+            detalhes_visitas += f"<p>Visita em: {visita['tempo'].strftime('%d/%m/%Y %H:%M:%S')}</p>"
         
         conteudo_html = f"""
         <html>
@@ -54,7 +58,6 @@ def enviar_relatorio_diario():
 
         <h3>Detalhes das Visitas:</h3>
         {detalhes_visitas}
-         <img src="gif" alt="Torcida GIF" style="width:200px;">
         </body>
         </html>
         """
