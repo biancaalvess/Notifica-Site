@@ -57,8 +57,6 @@ def enviar_notificacao_imediata(ip, user_agent):
     <body>
     <h2>🔔 Nova Visita no seu Portfólio!🥳</h2>
     <p><strong>Data e Hora:</strong> {agora.strftime('%d/%m/%Y %H:%M:%S')}</p>
-    <p><strong>IP:</strong> {ip}</p>
-    <p><strong>User Agent:</strong> {user_agent}</p>
     <p>Vamos torcer por uma entrevista!! 🎉</p>
     <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExYmxzbnNwancyZWxpeDA2emdkdnQ4cmN5M2Joa2Y4d2JraGl6aWY4bCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/31lPv5L3aIvTi/giphy.gif" alt="Celebracao GIF" style="width:300px; margin: 20px 0;">
     </body>
