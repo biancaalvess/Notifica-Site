@@ -57,11 +57,11 @@ def eh_bot(user_agent_string):
 def enviar_notificacao_imediata(ip, user_agent):
     global ultimo_email_enviado
     
-    # Verifica se já enviou email nos últimos 10 segundos (evita duplicatas)
+    # Verifica se já enviou email nos últimos 30 segundos (evita duplicatas)
     agora = agora_brasilia()
     if ultimo_email_enviado:
         tempo_desde_ultimo = (agora - ultimo_email_enviado).total_seconds()
-        if tempo_desde_ultimo < 4:
+        if tempo_desde_ultimo < 30:
             print(f"DEBUG: Email enviado recentemente ({tempo_desde_ultimo:.1f}s atras), ignorando duplicata")
             return False
     
