@@ -4,16 +4,19 @@ Este projeto é uma API simples desenvolvida com Flask (Python) que detecta aces
 
 ## O que ela faz?
 
-Agora, ao invés de enviar um e-mail a cada acesso, a API gera um relatório diário, contendo:
+A API possui dois tipos de notificações:
 
--  Quantidade total de acessos do dia  
--  Lista com os **horários das visitas** e quantas vezes ocorreram  
+1. **Notificação Imediata**: Receba um e-mail instantâneo a cada visita em tempo real
+2. **Relatório Diário**: Ao final do dia (17h00), receba um resumo com:
+   -  Quantidade total de acessos do dia  
+   -  Lista com os **horários das visitas** e quantas vezes ocorreram  
 
 ##  Funcionalidades
 
 - Detecta acessos via rotas HTTP (`/` e `/track-visit`)
 - Envia e-mails de forma segura via SMTP (Gmail)
-- Gera **relatórios diários automáticos às 20h42**
+- Gera **relatórios diários automáticos às 17h00**
+- **Notificações imediatas**: Receba e-mail instantâneo a cada visita!
 - Mostra os horários exatos das visitas, regiões e User-Agents
 - Suporte a Senhas de Aplicativo do Google
 - Variáveis de ambiente gerenciadas com `python-dotenv`
@@ -47,9 +50,13 @@ SMTP_PORT=587
 
 ##  ATUALIZAÇÕES
 
+### ✨ Notificações Imediatas
+
+Agora você recebe notificações **instantâneas** a cada visita em seu site! Cada acesso gera um e-mail imediato com as informações da visita (IP, User-Agent, data/hora). Perfeito para saber exatamente quando alguém acessa seu portfólio!
+
 ###  Relatório Diário Programado
 
-Graças à sugestão do [**Atevilson Araujo**](https://www.linkedin.com/in/atevilson-araujo/), agora o envio de e-mails acontece **somente uma vez ao dia, agrupando todos os acessos. Isso evita sobrecarga no e-mail e dá uma visão geral do tráfego do portfólio de forma organizada.
+Graças à sugestão do [**Atevilson Araujo**](https://www.linkedin.com/in/atevilson-araujo/), o relatório diário acontece às 17h00, **agrupando todos os acessos do dia**. Isso evita sobrecarga no e-mail e dá uma visão geral do tráfego do portfólio de forma organizada.
 
 ###  Proteção contra Bots
 
@@ -65,16 +72,19 @@ This project is a simple API developed with Flask (Python) that detects accesses
 
 ## What does it do?
 
-Now, instead of sending an email for each access, the API generates a daily report, containing:
+The API has two types of notifications:
 
-- Total number of accesses for the day
-- List with the **visit times** and how many times they occurred
+1. **Immediate Notification**: Receive an instant email for each visit in real-time
+2. **Daily Report**: At the end of the day (5:00 PM), receive a summary with:
+   - Total number of accesses for the day
+   - List with the **visit times** and how many times they occurred
 
 ## Features
 
 - Detects accesses via HTTP routes (`/` and `/track-visit`)
 - Sends emails securely via SMTP (Gmail)
-- Generates **automatic daily reports at 8:42 p.m.**
+- Generates **automatic daily reports at 5:00 PM**
+- **Immediate notifications**: Receive instant email for each visit!
 - Shows the exact times of visits, regions and User-Agents
 - Support for Google App Passwords
 - Environment variables managed with `python-dotenv`
@@ -108,9 +118,13 @@ SMTP_PORT=587
 
 ## UPDATES
 
+### ✨ Immediate Notifications
+
+Now you receive **instant** notifications for each site visit! Each access generates an immediate email with visit information (IP, User-Agent, date/time). Perfect for knowing exactly when someone accesses your portfolio!
+
 ### Scheduled Daily Report
 
-Thanks to the suggestion by [**Atevilson Araujo**](https://www.linkedin.com/in/atevilson-araujo/), now emails are sent **only once a day, grouping all accesses. This prevents email overload and provides an organized overview of portfolio traffic.
+Thanks to the suggestion by [**Atevilson Araujo**](https://www.linkedin.com/in/atevilson-araujo/), the daily report happens at 5:00 PM, **grouping all daily accesses**. This prevents email overload and provides an organized overview of portfolio traffic.
 
 ### Bot Protection
 
