@@ -55,7 +55,7 @@ def enviar_notificacao_imediata(ip, user_agent):
     conteudo_html = f"""
     <html>
     <body>
-    <h2>🔔 Nova Visita em devbianca.tech!</h2>
+    <h2>🔔 Nova Visita no seu Portfólio!</h2>
     <p><strong>Data e Hora:</strong> {agora.strftime('%d/%m/%Y %H:%M:%S')}</p>
     <p><strong>IP:</strong> {ip}</p>
     <p><strong>User Agent:</strong> {user_agent}</p>
