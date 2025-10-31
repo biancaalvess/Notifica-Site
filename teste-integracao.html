@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teste de Integração - API de Notificações</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+      }
+      .container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        text-align: center;
+        max-width: 600px;
+      }
+      h1 {
+        font-size: 2.5em;
+        margin-bottom: 20px;
+      }
+      p {
+        font-size: 1.2em;
+        line-height: 1.6;
+        margin-bottom: 30px;
+      }
+      .status {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+      .status.success {
+        background: rgba(34, 197, 94, 0.3);
+      }
+      .status.error {
+        background: rgba(239, 68, 68, 0.3);
+      }
+      .button {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid white;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 1.1em;
+        margin: 10px;
+        transition: all 0.3s;
+      }
+      .button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔔 Teste de Integração</h1>
+      <p>Esta página simula uma visita ao site devbianca.tech</p>
+      <p>A API foi chamada automaticamente!</p>
+
+      <div id="status" class="status">
+        <p>Carregando...</p>
+      </div>
+
+      <button class="button" onclick="testarNovamente()">
+        Testar Novamente
+      </button>
+    </div>
+
+    <script>
+      // URL da API local - altere para sua URL de produção
+      const API_URL = "http://localhost:5000/track-visit";
+
+      async function registrarVisita() {
+        const statusDiv = document.getElementById("status");
+
+        try {
+          // Faz a requisição para a API
+          const response = await fetch(API_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          // Verifica se a requisição foi bem-sucedida
+          if (response.ok) {
+            const data = await response.json();
+            statusDiv.className = "status success";
+            statusDiv.innerHTML = `
+                        <p>✅ <strong>Sucesso!</strong></p>
+                        <p>Visita registrada com sucesso!</p>
+                        <p>Verifique seu e-mail para ver a notificação.</p>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Status: ${response.status}</p>
+                    `;
+          } else {
+            statusDiv.className = "status error";
+            statusDiv.innerHTML = `
+                        <p>❌ <strong>Erro ao registrar visita</strong></p>
+                        <p>Status: ${response.status}</p>
+                        <p>Verifique se a API está rodando.</p>
+                    `;
+          }
+        } catch (error) {
+          statusDiv.className = "status error";
+          statusDiv.innerHTML = `
+                    <p>❌ <strong>Erro de conexão</strong></p>
+                    <p>Não foi possível conectar com a API.</p>
+                    <p style="font-size: 0.9em; margin-top: 10px;">Erro: ${error.message}</p>
+                    <p style="font-size: 0.8em; margin-top: 10px;">
+                        Certifique-se de que a API está rodando em ${API_URL}
+                    </p>
+                `;
+        }
+      }
+
+      function testarNovamente() {
+        const statusDiv = document.getElementById("status");
+        statusDiv.className = "status";
+        statusDiv.innerHTML = "<p>Carregando...</p>";
+        registrarVisita();
+      }
+
+      // Registra a visita quando a página carrega
+      window.addEventListener("load", registrarVisita);
+    </script>
+  </body>
+</html>

@@ -20,6 +20,20 @@ EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
 SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
 SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
 
+# Verifica configuração de e-mail ao iniciar
+if not EMAIL_ADDRESS or not EMAIL_PASSWORD or EMAIL_ADDRESS == 'seuemail@gmail.com':
+    print("=" * 60)
+    print("AVISO: EMAIL NAO CONFIGURADO!")
+    print("=" * 60)
+    print("Crie um arquivo .env com suas credenciais:")
+    print("EMAIL_ADDRESS=seuemail@gmail.com")
+    print("EMAIL_PASSWORD=sua_senha_de_aplicativo")
+    print("=" * 60)
+    print("Veja CONFIGURACAO_EMAIL.md para mais detalhes")
+    print("=" * 60)
+else:
+    print(f"Email configurado: {EMAIL_ADDRESS}")
+
 # Armazena dados das visitas 
 visitas = []
 bloqueio = threading.Lock()
@@ -62,6 +76,11 @@ def enviar_notificacao_imediata(ip, user_agent):
             servidor.send_message(msg)
         print(f"Notificação imediata enviada em {agora.strftime('%d/%m/%Y %H:%M:%S')}")
         return True
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"ERRO DE AUTENTICACAO: Falha ao enviar email - {e}")
+        print("Verifique se usou uma Senha de Aplicativo do Gmail")
+        print("Veja CONFIGURACAO_EMAIL.md para mais detalhes")
+        return False
     except Exception as e:
         print(f"Erro ao enviar notificação imediata: {e}")
         return False
