@@ -47,6 +47,7 @@ def eh_bot(user_agent_string):
 
 # Envia notificação imediata de visita
 def enviar_notificacao_imediata(ip, user_agent):
+    print("DEBUG: Função enviar_notificacao_imediata chamada")
     if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
         print("Configuração de e-mail não encontrada. Verifique o arquivo .env")
         return False
@@ -69,19 +70,25 @@ def enviar_notificacao_imediata(ip, user_agent):
     msg['To'] = EMAIL_ADDRESS
 
     try:
+        print("DEBUG: Tentando conectar ao SMTP...")
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as servidor:
+            print("DEBUG: Iniciando TLS...")
             servidor.starttls()
+            print("DEBUG: Fazendo login...")
             servidor.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            print("DEBUG: Enviando mensagem...")
             servidor.send_message(msg)
-        print(f"Notificação imediata enviada em {agora.strftime('%d/%m/%Y %H:%M:%S')}")
+        print(f"✅ NOTIFICACAO ENVIADA COM SUCESSO em {agora.strftime('%d/%m/%Y %H:%M:%S')}")
         return True
     except smtplib.SMTPAuthenticationError as e:
-        print(f"ERRO DE AUTENTICACAO: Falha ao enviar email - {e}")
+        print(f"❌ ERRO DE AUTENTICACAO: Falha ao enviar email - {e}")
         print("Verifique se usou uma Senha de Aplicativo do Gmail")
         print("Veja CONFIGURACAO_EMAIL.md para mais detalhes")
         return False
     except Exception as e:
-        print(f"Erro ao enviar notificação imediata: {e}")
+        print(f"❌ ERRO AO ENVIAR NOTIFICACAO: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 # Envia relatório diário por e-mail
