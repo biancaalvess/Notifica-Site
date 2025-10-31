@@ -9,6 +9,7 @@ import threading
 import schedule
 import time
 from user_agents import parse
+import pytz
 
 app = Flask(__name__)
 CORS(app)
@@ -38,6 +39,11 @@ else:
 visitas = []
 bloqueio = threading.Lock()
 
+# Função para obter data/hora de Brasília
+def agora_brasilia():
+    brasilia_tz = pytz.timezone('America/Sao_Paulo')
+    return datetime.now(brasilia_tz)
+
 # Detecção de bots: bloqueia User-Agents comuns de bots
 def eh_bot(user_agent_string):
     if not user_agent_string:
@@ -52,12 +58,12 @@ def enviar_notificacao_imediata(ip, user_agent):
         print("Configuração de e-mail não encontrada. Verifique o arquivo .env")
         return False
     
-    agora = datetime.now()
+    agora = agora_brasilia()
     conteudo_html = f"""
     <html>
     <body>
-    <h2>🔔 Nova Visita no seu Portfólio!</h2>
-    <p><strong>Data e Hora:</strong> {agora.strftime('%d/%m/%Y %H:%M:%S')}</p>
+    <h2>🔔 Nova Visita no seu Portfólio!🥳</h2>
+    <p><strong>Data e Hora:</strong> {agora.strftime('%d/%m/%Y %H:%M:%S')} (Horário de Brasília)</p>
     <p>Vamos torcer por uma entrevista!! 🎉</p>
     <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExYmxzbnNwancyZWxpeDA2emdkdnQ4cmN5M2Joa2Y4d2JraGl6aWY4bCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/31lPv5L3aIvTi/giphy.gif" alt="Celebracao GIF" style="width:300px; margin: 20px 0;">
     </body>
@@ -78,15 +84,14 @@ def enviar_notificacao_imediata(ip, user_agent):
             servidor.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
             print("DEBUG: Enviando mensagem...")
             servidor.send_message(msg)
-        print(f"✅ NOTIFICACAO ENVIADA COM SUCESSO em {agora.strftime('%d/%m/%Y %H:%M:%S')}")
+        print(f"[SUCESSO] NOTIFICACAO ENVIADA em {agora.strftime('%d/%m/%Y %H:%M:%S')}")
         return True
     except smtplib.SMTPAuthenticationError as e:
-        print(f"❌ ERRO DE AUTENTICACAO: Falha ao enviar email - {e}")
+        print(f"[ERRO] AUTENTICACAO FALHOU: {e}")
         print("Verifique se usou uma Senha de Aplicativo do Gmail")
-        print("Veja CONFIGURACAO_EMAIL.md para mais detalhes")
         return False
     except Exception as e:
-        print(f"❌ ERRO AO ENVIAR NOTIFICACAO: {type(e).__name__}: {e}")
+        print(f"[ERRO] FALHA AO ENVIAR: {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -102,7 +107,7 @@ def enviar_relatorio_diario():
             print("Nenhuma visita para relatar hoje.")
             return
         
-        agora = datetime.now()
+        agora = agora_brasilia()
         total_visitas = len(visitas)
         detalhes_visitas = ""
         for visita in visitas:
@@ -113,7 +118,7 @@ def enviar_relatorio_diario():
         <body>
         <h2>Relatório Diário de Visitas</h2>
         <p>Total de Visitas: {total_visitas}</p>
-        <p>Data do Relatório: {agora.strftime('%d/%m/%Y')}</p>
+        <p>Data do Relatório: {agora.strftime('%d/%m/%Y')} (Horário de Brasília)</p>
         <p>Vamos torcer por uma entrevista!!</p>
 
         <h3>Detalhes das Visitas:</h3>
@@ -153,7 +158,7 @@ def home():
         return "Acesso negado: Bots não são permitidos.", 403
     
     ip = request.remote_addr
-    agora = datetime.now()
+    agora = agora_brasilia()
     
     with bloqueio:
         visitas.append({
@@ -175,7 +180,7 @@ def track_visit():
         return {"error": "Bots não são permitidos"}, 403
     
     ip = request.remote_addr
-    agora = datetime.now()
+    agora = agora_brasilia()
     
     with bloqueio:
         visitas.append({

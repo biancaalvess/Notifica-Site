@@ -4,3 +4,4 @@ python-dotenv
 gunicorn==21.2.0
 schedule
 user-agents
+pytz
