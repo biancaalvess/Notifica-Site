@@ -38,6 +38,8 @@ else:
 # Armazena dados das visitas 
 visitas = []
 bloqueio = threading.Lock()
+# Controle de envio de email para evitar duplicatas
+ultimo_email_enviado = None
 
 # Função para obter data/hora de Brasília
 def agora_brasilia():
@@ -53,16 +55,24 @@ def eh_bot(user_agent_string):
 
 # Envia notificação imediata de visita
 def enviar_notificacao_imediata(ip, user_agent):
+    global ultimo_email_enviado
+    
+    # Verifica se já enviou email nos últimos 10 segundos (evita duplicatas)
+    agora = agora_brasilia()
+    if ultimo_email_enviado:
+        tempo_desde_ultimo = (agora - ultimo_email_enviado).total_seconds()
+        if tempo_desde_ultimo < 10:
+            print(f"DEBUG: Email enviado recentemente ({tempo_desde_ultimo:.1f}s atras), ignorando duplicata")
+            return False
+    
     print("DEBUG: Função enviar_notificacao_imediata chamada")
     if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
         print("Configuração de e-mail não encontrada. Verifique o arquivo .env")
         return False
-    
-    agora = agora_brasilia()
     conteudo_html = f"""
     <html>
     <body>
-    <h2>🔔 Nova Visita no seu Portfólio!🥳</h2>
+    <h2>Nova Visita no seu Portfólio!🥳</h2>
     <p>Vamos torcer por uma entrevista!! 🎉</p>
     <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExYmxzbnNwancyZWxpeDA2emdkdnQ4cmN5M2Joa2Y4d2JraGl6aWY4bCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/31lPv5L3aIvTi/giphy.gif" alt="Celebracao GIF" style="width:300px; margin: 20px 0;">
     <p><strong>Data e Hora:</strong> {agora.strftime('%d/%m/%Y %H:%M:%S')} (Horário de Brasília)</p>
@@ -85,6 +95,7 @@ def enviar_notificacao_imediata(ip, user_agent):
             print("DEBUG: Enviando mensagem...")
             servidor.send_message(msg)
         print(f"[SUCESSO] NOTIFICACAO ENVIADA em {agora.strftime('%d/%m/%Y %H:%M:%S')}")
+        ultimo_email_enviado = agora  # Registra o horário do envio
         return True
     except smtplib.SMTPAuthenticationError as e:
         print(f"[ERRO] AUTENTICACAO FALHOU: {e}")
