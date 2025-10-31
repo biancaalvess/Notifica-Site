@@ -61,7 +61,7 @@ def enviar_notificacao_imediata(ip, user_agent):
     agora = agora_brasilia()
     if ultimo_email_enviado:
         tempo_desde_ultimo = (agora - ultimo_email_enviado).total_seconds()
-        if tempo_desde_ultimo < 10:
+        if tempo_desde_ultimo < 4:
             print(f"DEBUG: Email enviado recentemente ({tempo_desde_ultimo:.1f}s atras), ignorando duplicata")
             return False
     
