@@ -44,7 +44,11 @@ EMAIL_ADDRESS=seuemail@gmail.com
 EMAIL_PASSWORD=sua_senha_de_aplicativo
 SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
-````
+```
+
+## 🚀 Deploy
+
+Esta API está hospedada no **Vercel** e pode ser acessada em tempo real. Configure as variáveis de ambiente no painel do Vercel para funcionar corretamente.
 
 ---
 
@@ -60,7 +64,11 @@ Graças à sugestão do [**Atevilson Araujo**](https://www.linkedin.com/in/atevi
 
 ###  Proteção contra Bots
 
-Essa funcionalidade foi desenvolvida após o [**Angelo Mendes**](https://www.linkedin.com/in/mangelodev/) me questionar sobre a possibilidade de bloquear acessos automatizados. Graças à visão dele, foi implementada uma verificação simples de User-Agent para impedir bots/crawlers indesejados. Resultado? Segurança reforçada e visitas mais precisas! 
+Essa funcionalidade foi desenvolvida após o [**Angelo Mendes**](https://www.linkedin.com/in/mangelodev/) me questionar sobre a possibilidade de bloquear acessos automatizados. Graças à visão dele, foi implementada uma verificação simples de User-Agent para impedir bots/crawlers indesejados. Resultado? Segurança reforçada e visitas mais precisas!
+
+### 🔒 Anti-duplicatas
+
+Sistema inteligente que evita envio de múltiplos e-mails para a mesma visita. Configurado para permitir apenas **1 email por 30 segundos**, garantindo que você não receba spam mesmo com múltiplas requisições simultâneas. 
 
 
 Agradeço a cada um pelo estimulo e contribuição, sintam-se sempre a vontade para participar!
@@ -112,7 +120,11 @@ EMAIL_ADDRESS=youremail@gmail.com
 EMAIL_PASSWORD=your_application_password
 SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
-````
+```
+
+## 🚀 Deploy
+
+This API is hosted on **Vercel** and can be accessed in real-time. Configure environment variables in the Vercel dashboard to work correctly.
 
 ---
 
@@ -129,6 +141,10 @@ Thanks to the suggestion by [**Atevilson Araujo**](https://www.linkedin.com/in/a
 ### Bot Protection
 
 This feature was developed after [**Angelo Mendes**](https://www.linkedin.com/in/mangelodev/) asked me about the possibility of blocking automated access. Thanks to his insight, a simple User-Agent check was implemented to prevent unwanted bots/crawlers. The result? Enhanced security and more accurate visits!
+
+### 🔒 Anti-duplicates
+
+Smart system that prevents sending multiple emails for the same visit. Configured to allow only **1 email per 30 seconds**, ensuring you don't receive spam even with multiple simultaneous requests.
 
 I thank everyone for their encouragement and contribution, always feel free to participate!
 ---
