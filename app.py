@@ -159,8 +159,21 @@ def agendar_relatorio_diario():
         schedule.run_pending()
         time.sleep(60)  # Verifica a cada minuto
 
-# Inicia o agendador em uma thread em segundo plano
-threading.Thread(target=agendar_relatorio_diario, daemon=True).start()
+# Inicia o agendador em uma thread em segundo plano (apenas se não estiver no Vercel)
+# No Vercel (serverless), o schedule pode não funcionar bem, então fazemos isso apenas se necessário
+try:
+    threading.Thread(target=agendar_relatorio_diario, daemon=True).start()
+except Exception as e:
+    print(f"AVISO: Não foi possível iniciar agendador (pode ser ambiente serverless): {e}")
+
+@app.route('/health')
+def health():
+    """Rota de health check para verificar se a API está funcionando"""
+    return {
+        "status": "ok",
+        "email_configured": bool(EMAIL_ADDRESS and EMAIL_PASSWORD),
+        "timestamp": agora_brasilia().strftime('%d/%m/%Y %H:%M:%S')
+    }
 
 @app.route('/')
 def home():
