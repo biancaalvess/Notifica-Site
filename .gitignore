@@ -41,3 +41,7 @@ Thumbs.db
 # Logs
 *.log
 
+# Arquivos de persistência (dados da API)
+visitas.json
+ultimo_email.json
+
