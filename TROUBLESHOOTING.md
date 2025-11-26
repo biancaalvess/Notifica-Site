@@ -1,5 +1,21 @@
 # 🔧 Troubleshooting - API não está funcionando
 
+## ✅ Arquitetura Atualizada para Vercel (Serverless)
+
+A API foi refatorada para funcionar corretamente no ambiente serverless do Vercel:
+
+- **Persistência**: Dados salvos em arquivos JSON (funciona no Vercel)
+- **Cron Jobs**: Relatório diário via Vercel Cron (configurado em `vercel.json`)
+- **Anti-duplicatas**: Usa persistência em arquivo (funciona com múltiplas instâncias)
+
+### Relatório Diário
+
+O relatório diário agora é enviado via **Cron Job do Vercel** às 17:00 (horário de Brasília).
+
+- Rota: `/enviar-relatorio-diario`
+- Configurado em: `vercel.json` → `crons`
+- Horário: 20:00 UTC (17:00 Brasília)
+
 ## Problemas Comuns e Soluções
 
 ### 1. API não responde no Vercel
@@ -88,7 +104,14 @@ python app.py
 
 ### Teste Vercel
 ```bash
+# Testar tracking
 curl -X POST https://sua-api.vercel.app/track-visit
+
+# Testar health check
+curl https://sua-api.vercel.app/health
+
+# Testar relatório diário manualmente
+curl https://sua-api.vercel.app/enviar-relatorio-diario
 ```
 
 ## Verificar Logs
@@ -111,8 +134,11 @@ curl -X POST https://sua-api.vercel.app/track-visit
 - [ ] Logs mostram "DEBUG: Função enviar_notificacao_imediata chamada"?
 - [ ] Logs mostram "[SUCESSO]" ou "[ERRO]"?
 - [ ] Teste local funciona?
-- [ ] `vercel.json` existe e está correto?
-- [ ] `requirements.txt` está completo?
+- [ ] `vercel.json` existe e está correto (incluindo cron)?
+- [ ] `requirements.txt` está completo (sem schedule)?
+- [ ] Rota `/health` retorna status ok?
+- [ ] Rota `/enviar-relatorio-diario` funciona manualmente?
+- [ ] Cron job está configurado no Vercel?
 
 ## Próximos Passos
 

@@ -11,6 +11,12 @@
       "src": "/(.*)",
       "dest": "app.py"
     }
+  ],
+  "crons": [
+    {
+      "path": "/enviar-relatorio-diario",
+      "schedule": "0 20 * * *"
+    }
   ]
 }
 
