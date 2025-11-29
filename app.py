@@ -8,7 +8,7 @@ from flask_cors import CORS
 import threading
 from user_agents import parse
 import pytz
-import database  # Importa nosso novo módulo de banco de dados
+import database
 
 app = Flask(__name__)
 CORS(app)
@@ -23,24 +23,20 @@ SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
 if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
     print("AVISO: EMAIL NAO CONFIGURADO! Verifique o .env")
 
-# Função para obter data/hora de Brasília
 def agora_brasilia():
     brasilia_tz = pytz.timezone('America/Sao_Paulo')
     return datetime.now(brasilia_tz)
 
-# Detecção de bots
 def eh_bot(user_agent_string):
     if not user_agent_string:
         return True
     user_agent = parse(user_agent_string)
     return user_agent.is_bot or 'bot' in user_agent_string.lower()
 
-# Envia notificação imediata de visita
 def enviar_notificacao_imediata(ip, user_agent):
     agora = agora_brasilia()
     ultimo_email_enviado = database.obter_ultimo_email_enviado()
     
-    # Verifica duplicatas (30 segundos)
     if ultimo_email_enviado:
         if ultimo_email_enviado.tzinfo is None:
             brasilia_tz = pytz.timezone('America/Sao_Paulo')
@@ -82,7 +78,6 @@ def enviar_notificacao_imediata(ip, user_agent):
         print(f"[ERRO] Falha ao enviar email: {e}")
         return False
 
-# Envia relatório diário por e-mail (MODIFICADO PARA NÃO ZERAR)
 def enviar_relatorio_diario():
     if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
         return {"error": "Email não configurado"}, 500
@@ -94,11 +89,9 @@ def enviar_relatorio_diario():
     
     agora = agora_brasilia()
     
-    # Filtra visitas APENAS para exibição no relatório de "Hoje"
     visitas_hoje = []
     for visita in visitas:
         try:
-            # Garante que temos um objeto datetime
             tempo_visita = visita['tempo']
             if isinstance(tempo_visita, str):
                 tempo_visita = datetime.fromisoformat(tempo_visita.replace('Z', '+00:00'))
@@ -108,10 +101,9 @@ def enviar_relatorio_diario():
         except:
             continue
     
-    total_geral = len(visitas)      # Contagem acumulada (NUNCA ZERA)
-    total_hoje = len(visitas_hoje)  # Contagem do dia
+    total_geral = len(visitas)
+    total_hoje = len(visitas_hoje)
     
-    # Monta a lista de horários de hoje
     detalhes_visitas_hoje = ""
     if visitas_hoje:
         for visita in visitas_hoje:
@@ -155,10 +147,6 @@ def enviar_relatorio_diario():
             servidor.send_message(msg)
         
         print(f"Relatório enviado. Total acumulado: {total_geral}")
-        
-        # IMPORTANTE: Não removemos mais as visitas do arquivo!
-        # A persistência é mantida integralmente no database.py
-        
         return {"message": "Relatório enviado", "total_geral": total_geral, "hoje": total_hoje}, 200
     except Exception as e:
         print(f"Erro ao enviar relatório: {e}")
@@ -185,7 +173,6 @@ def home():
     
     ip = request.remote_addr
     
-    # Registra visita no banco de dados
     database.salvar_visita({
         'tempo': agora_brasilia(),
         'ip': ip,
@@ -195,7 +182,8 @@ def home():
     threading.Thread(target=enviar_notificacao_imediata, args=(ip, user_agent), daemon=True).start()
     return "Bem-vindo ao NotificaSite!"
 
-@app.route('/track-visit', methods=['GET', 'POST', 'OPTIONS'])
+# MUDANÇA AQUI: Rota renomeada para evitar AdBlock
+@app.route('/api/ping', methods=['GET', 'POST', 'OPTIONS'])
 def track_visit():
     user_agent = request.headers.get('User-Agent')
     if eh_bot(user_agent):
@@ -203,7 +191,6 @@ def track_visit():
     
     ip = request.remote_addr
     
-    # Registra visita no banco de dados
     database.salvar_visita({
         'tempo': agora_brasilia(),
         'ip': ip,
