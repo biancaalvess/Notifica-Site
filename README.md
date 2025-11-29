@@ -1,4 +1,3 @@
-````markdown
 # API de Notificação de Visitas
 
 Este projeto é uma API simples desenvolvida com Flask (Python) que detecta acessos em sites, armazena um histórico persistente de visitas e envia notificações por e-mail.
@@ -115,10 +114,7 @@ Sistema que previne spam no seu e-mail.
   * Se o mesmo visitante (ou múltiplos visitantes) acionarem a API várias vezes em menos de 30 segundos, apenas **um** e-mail de notificação imediata será enviado, mas todas as visitas serão contabilizadas no banco de dados.
 
 
-```
-```
-
-````markdown
+---------------------------------------------------------------------
 
 # Visit Notification API
 
@@ -265,6 +261,3 @@ New module `database.py` implemented.
 System that prevents spam in your email.
 
 * If the same visitor (or multiple visitors) trigger the API several times in less than 30 seconds, only **one** immediate notification email will be sent, but all visits will be counted in the database.
-
-``
-```
