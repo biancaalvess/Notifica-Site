@@ -1,150 +1,270 @@
-# API de Notificação de Visitas por E-mail
+````markdown
+# API de Notificação de Visitas
 
-Este projeto é uma API simples desenvolvida com Flask (Python) que detecta acessos e envia notificações por e-mail sobre as visitas.
+Este projeto é uma API simples desenvolvida com Flask (Python) que detecta acessos em sites, armazena um histórico persistente de visitas e envia notificações por e-mail.
 
 ## O que ela faz?
 
-A API possui dois tipos de notificações:
+1.  **Notificação Imediata**: Envia um e-mail instantâneo a cada nova visita recebida no teu site.
+2.  **Relatório Diário**: Envia um resumo automático às 17h00 com:
+    * Total de visitas do dia.
+    * **Total Geral Acumulado** (histórico completo desde o início).
+    * Horários detalhados dos acessos.
+3.  **Persistência de Dados**: Mantém o histórico de visitas salvo em arquivo JSON, garantindo que a contagem não zere diariamente.
+4.  **Anti-AdBlock**: Utiliza rotas neutras (`/api/ping`) para evitar bloqueio por extensões de privacidade e navegadores como Brave.
 
-1. **Notificação Imediata**: Receba um e-mail instantâneo a cada visita em tempo real
-2. **Relatório Diário**: Ao final do dia (17h00), receba um resumo com:
-   -  Quantidade total de acessos do dia  
-   -  Lista com os **horários das visitas** e quantas vezes ocorreram  
+## 🔗 Endpoints
 
-##  Funcionalidades
+* **GET /**: Rota de boas-vindas.
+* **POST /api/ping**: Rota para registrar uma visita (Substitui a antiga `/track-visit` para evitar bloqueios de AdBlock).
+* **GET /health**: Verifica o status da API e exibe o total de visitas registradas.
+* **GET /enviar-relatorio-diario**: Rota acionada pelo Cron Job para enviar o resumo do dia.
 
-- Detecta acessos via rotas HTTP (`/` e `/track-visit`)
-- Envia e-mails de forma segura via SMTP (Gmail)
-- Gera **relatórios diários automáticos às 17h00**
-- **Notificações imediatas**: Receba e-mail instantâneo a cada visita!
-- Mostra os horários exatos das visitas, regiões e User-Agents
-- Suporte a Senhas de Aplicativo do Google
-- Variáveis de ambiente gerenciadas com `python-dotenv`
-- Pode ser integrada facilmente com front-ends usando `fetch`
-- Proteção contra bots via verificação de User-Agent
+## 💻 Como integrar no Frontend
 
-## Tecnologias Utilizadas
+Para registrar uma visita no teu site (React, Next.js, HTML puro, etc.), faz uma requisição `POST` para a rota `/api/ping`:
 
-- Python 3  
-- Flask  
-- Flask-CORS  
-- python-dotenv  
-- smtplib (para envio de e-mail)  
-- Gmail SMTP  
-- schedule (para agendamento do relatório diário)  
-- user-agents (para detecção de bots)  
+```javascript
+// Exemplo de integração
+fetch('[https://sua-api.vercel.app/api/ping](https://sua-api.vercel.app/api/ping)', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    // Opcional: enviar dados extras no corpo se necessário
+    body: JSON.stringify({}) 
+})
+.then(response => {
+    if (response.ok) console.log("Visita registrada!");
+})
+.catch(err => console.error("Erro ao registrar visita", err));
+````
 
-##  Observações
+## 🛠 Tecnologias Utilizadas
 
-- O servidor precisa estar rodando para que a API responda às requisições.
-- As seguintes variáveis de ambiente devem estar corretamente configuradas:
+  * **Python 3 & Flask**: Backend serverless leve.
+  * **JSON Database**: Sistema de persistência de dados em arquivo (`database.py`).
+  * **SMTP (Gmail)**: Para envio seguro de notificações.
+  * **Vercel Cron**: Para agendamento automático do relatório diário.
+  * **User-Agents**: Biblioteca para detecção e bloqueio de bots.
 
-```env
-EMAIL_ADDRESS=seuemail@gmail.com
-EMAIL_PASSWORD=sua_senha_de_aplicativo
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
+## ⚙️ Configuração Local
+
+1.  Clone o repositório:
+
+    ```bash
+    git clone [https://github.com/seu-usuario/seu-repo.git](https://github.com/seu-usuario/seu-repo.git)
+    cd seu-repo
+    ```
+
+2.  Crie um ambiente virtual e instale as dependências:
+
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # No Windows: venv\Scripts\activate
+    pip install -r requirements.txt
+    ```
+
+3.  Configure as variáveis de ambiente:
+    Crie um arquivo `.env` na raiz (baseado no `.env.example`) e adicione:
+
+    ```env
+    EMAIL_ADDRESS=seuemail@gmail.com
+    EMAIL_PASSWORD=sua_senha_de_aplicativo
+    SMTP_SERVER=smtp.gmail.com
+    SMTP_PORT=587
+    ```
+
+4.  Execute o servidor:
+
+    ```bash
+    python app.py
+    ```
+
+## 🚀 Deploy no Vercel
+
+Esta API está pronta para rodar no Vercel. Após fazer o deploy, configure as variáveis de ambiente no painel do projeto (Settings → Environment Variables):
+
+  * `EMAIL_ADDRESS`
+  * `EMAIL_PASSWORD` (Use uma Senha de Aplicativo do Google, não a sua senha pessoal)
+  * `SMTP_SERVER`
+  * `SMTP_PORT`
+
+-----
+
+## 🔄 Histórico de Atualizações Recentes
+
+### ✅ Anti-AdBlock (Mudança de Rota)
+
+A rota principal foi alterada de `/track-visit` para `/api/ping`.
+
+  * **Motivo:** Bloqueadores de anúncios (uBlock Origin, AdBlock) e navegadores focados em privacidade bloqueiam automaticamente URLs contendo a palavra "track".
+  * **Solução:** O uso de um nome neutro (`ping`) garante que a requisição chegue ao servidor e a visita seja contabilizada.
+
+### 💾 Persistência de Dados
+
+Implementado novo módulo `database.py`.
+
+  * **Antes:** O sistema limpava as visitas após enviar o relatório diário.
+  * **Agora:** O histórico é mantido integralmente. O relatório diário informa quantas visitas ocorreram "Hoje" e qual é o "Total Acumulado" desde o início do projeto.
+
+### 🔒 Anti-duplicatas Inteligente
+
+Sistema que previne spam no seu e-mail.
+
+  * Se o mesmo visitante (ou múltiplos visitantes) acionarem a API várias vezes em menos de 30 segundos, apenas **um** e-mail de notificação imediata será enviado, mas todas as visitas serão contabilizadas no banco de dados.
+
+
+```
 ```
 
-## 🚀 Deploy
+````markdown
 
-Esta API está hospedada no **Vercel** e pode ser acessada em tempo real. Configure as variáveis de ambiente no painel do Vercel para funcionar corretamente.
+# Visit Notification API
 
----
-
-##  ATUALIZAÇÕES
-
-### ✨ Notificações Imediatas
-
-Agora você recebe notificações **instantâneas** a cada visita em seu site! Cada acesso gera um e-mail imediato com as informações da visita (IP, User-Agent, data/hora). Perfeito para saber exatamente quando alguém acessa seu portfólio!
-
-###  Relatório Diário Programado
-
-Graças à sugestão do [**Atevilson Araujo**](https://www.linkedin.com/in/atevilson-araujo/), o relatório diário acontece às 17h00, **agrupando todos os acessos do dia**. Isso evita sobrecarga no e-mail e dá uma visão geral do tráfego do portfólio de forma organizada.
-
-###  Proteção contra Bots
-
-Essa funcionalidade foi desenvolvida após o [**Angelo Mendes**](https://www.linkedin.com/in/mangelodev/) me questionar sobre a possibilidade de bloquear acessos automatizados. Graças à visão dele, foi implementada uma verificação simples de User-Agent para impedir bots/crawlers indesejados. Resultado? Segurança reforçada e visitas mais precisas!
-
-### 🔒 Anti-duplicatas
-
-Sistema inteligente que evita envio de múltiplos e-mails para a mesma visita. Configurado para permitir apenas **1 email por 30 segundos**, garantindo que você não receba spam mesmo com múltiplas requisições simultâneas. 
-
-
-Agradeço a cada um pelo estimulo e contribuição, sintam-se sempre a vontade para participar!
-------------------------------------------------
-
-# Email Notification API
-
-This project is a simple API developed with Flask (Python) that detects accesses and sends email notifications about the visits.
+This project is a simple API developed with Flask (Python) that detects website visits, stores a persistent visit history, and sends email notifications.
 
 ## What does it do?
 
-The API has two types of notifications:
+1. **Immediate Notification**: Sends an instant email for each new visit received on your website.
 
-1. **Immediate Notification**: Receive an instant email for each visit in real-time
-2. **Daily Report**: At the end of the day (5:00 PM), receive a summary with:
-   - Total number of accesses for the day
-   - List with the **visit times** and how many times they occurred
+2. **Daily Report**: Sends an automatic summary at 5 PM with:
 
-## Features
+* Total visits for the day.
 
-- Detects accesses via HTTP routes (`/` and `/track-visit`)
-- Sends emails securely via SMTP (Gmail)
-- Generates **automatic daily reports at 5:00 PM**
-- **Immediate notifications**: Receive instant email for each visit!
-- Shows the exact times of visits, regions and User-Agents
-- Support for Google App Passwords
-- Environment variables managed with `python-dotenv`
-- Can be easily integrated with front-ends using `fetch`
-- Protection against bots via User-Agent verification
+* **Grand Total Accumulated** (complete history from the beginning).
 
-## Technologies Used
+* Detailed access times.
 
-- Python 3
-- Flask
-- Flask-CORS
-- python-dotenv
-- smtplib (for sending emails) e-mail)
-- Gmail SMTP
-- schedule (to schedule the daily report)
-- user-agents (to detect bots)
+3. **Data Persistence**: Keeps the visit history saved in a JSON file, ensuring that the count does not reset daily.
 
-## Notes
+4. **Anti-AdBlock**: Uses neutral routes (`/api/ping`) to avoid blocking by privacy extensions and browsers like Brave.
 
-- The server must be running for the API to respond to requests.
-- The following environment variables must be correctly configured:
+## 🔗 Endpoints
 
-```env
-EMAIL_ADDRESS=youremail@gmail.com
+* **GET /**: Welcome route.
+
+* **POST /api/ping**: Route to register a visit (Replaces the old `/track-visit` to avoid AdBlock blocks).
+
+* **GET /health**: Checks the API status and displays the total number of registered visits.
+
+* **GET /send-daily-report**: Route triggered by the Cron Job to send the daily summary.
+
+## 💻 How to integrate in the Frontend
+
+To register a visit to your website (React, Next.js, pure HTML, etc.), make a `POST` request to the `/api/ping` route:
+
+```javascript
+// Integration example
+fetch('[https://your-api.vercel.app/api/ping](https://your-api.vercel.app/api/ping)', {
+
+method: 'POST',
+
+headers: {
+
+'Content-Type': 'application/json'
+
+},
+
+/ Optional: send extra data in the body if necessary
+
+body: JSON.stringify({})
+})
+.then(response => {
+
+if (response.ok) console.log("Visit registered!");
+
+})
+.catch(err => console.error("Error registering visit", err));
+````
+
+## 🛠 Technologies Used
+
+* **Python 3 & Flask**: Lightweight serverless backend.
+
+* **JSON Database**: Data persistence system in a file (`database.py`).
+
+* **SMTP (Gmail)**: For secure notification delivery.
+
+* **Vercel Cron**: For automatic scheduling of the daily report.
+
+* **User-Agents**: Library for detecting and blocking bots.
+
+## ⚙️ Local Configuration
+
+1. Clone the repository:
+
+``bash
+git clone [https://github.com/your-username/your-repo.git](https://github.com/your-username/your-repo.git)
+
+cd your-repo
+
+``
+
+2. Create a virtual environment and install the dependencies:
+
+``bash
+python -m venv venv
+source venv/bin/activate # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+``
+
+3. Configure the environment variables:
+
+Create a `.env` file in the root directory (based on `.env.example`) and add:
+
+``env
+EMAIL_ADDRESS=your_email@gmail.com
 EMAIL_PASSWORD=your_application_password
 SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
+
+
+4. Run the server:
+
+``bash
+python app.py
+
+``
+
+## 🚀 Deploy on Vercel
+
+This API is ready to run on Vercel. After deploying, configure the environment variables in the project panel (Settings → Environment Variables):
+
+* `EMAIL_ADDRESS`
+
+* `EMAIL_PASSWORD` (Use a Google App Password, not your personal password)
+
+* `SMTP_SERVER`
+
+* `SMTP_PORT`
+
+-----
+
+## 🔄 Recent Update History
+
+### ✅ Anti-AdBlock (Route Change)
+
+The main route has been changed from `/track-visit` to `/api/ping`.
+
+* **Reason:** Ad blockers (uBlock Origin, AdBlock) and privacy-focused browsers automatically block URLs containing the word "track".
+
+* **Solution:** Using a neutral name (`ping`) ensures that the request reaches the server and the visit is counted.
+
+### 💾 Data Persistence
+
+New module `database.py` implemented.
+
+* **Before:** The system cleared visits after sending the daily report.
+
+* **Now:** The history is fully maintained. The daily report informs how many visits occurred "Today" and what the "Total Accumulated" is since the beginning of the project.
+
+### 🔒 Intelligent Anti-Duplicate
+
+System that prevents spam in your email.
+
+* If the same visitor (or multiple visitors) trigger the API several times in less than 30 seconds, only **one** immediate notification email will be sent, but all visits will be counted in the database.
+
+``
 ```
-
-## 🚀 Deploy
-
-This API is hosted on **Vercel** and can be accessed in real-time. Configure environment variables in the Vercel dashboard to work correctly.
-
----
-
-## UPDATES
-
-### ✨ Immediate Notifications
-
-Now you receive **instant** notifications for each site visit! Each access generates an immediate email with visit information (IP, User-Agent, date/time). Perfect for knowing exactly when someone accesses your portfolio!
-
-### Scheduled Daily Report
-
-Thanks to the suggestion by [**Atevilson Araujo**](https://www.linkedin.com/in/atevilson-araujo/), the daily report happens at 5:00 PM, **grouping all daily accesses**. This prevents email overload and provides an organized overview of portfolio traffic.
-
-### Bot Protection
-
-This feature was developed after [**Angelo Mendes**](https://www.linkedin.com/in/mangelodev/) asked me about the possibility of blocking automated access. Thanks to his insight, a simple User-Agent check was implemented to prevent unwanted bots/crawlers. The result? Enhanced security and more accurate visits!
-
-### 🔒 Anti-duplicates
-
-Smart system that prevents sending multiple emails for the same visit. Configured to allow only **1 email per 30 seconds**, ensuring you don't receive spam even with multiple simultaneous requests.
-
-I thank everyone for their encouragement and contribution, always feel free to participate!
----
