@@ -8,7 +8,7 @@ from flask_cors import CORS
 import threading
 from user_agents import parse
 import pytz
-import json
+import database  # Importa nosso novo módulo de banco de dados
 
 app = Flask(__name__)
 CORS(app)
@@ -20,89 +20,15 @@ EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
 SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
 SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
 
-# Verifica configuração de e-mail ao iniciar
-if not EMAIL_ADDRESS or not EMAIL_PASSWORD or EMAIL_ADDRESS == 'seuemail@gmail.com':
-    print("=" * 60)
-    print("AVISO: EMAIL NAO CONFIGURADO!")
-    print("=" * 60)
-    print("Crie um arquivo .env com suas credenciais:")
-    print("EMAIL_ADDRESS=seuemail@gmail.com")
-    print("EMAIL_PASSWORD=sua_senha_de_aplicativo")
-    print("=" * 60)
-    print("Veja CONFIGURACAO_EMAIL.md para mais detalhes")
-    print("=" * 60)
-else:
-    print(f"Email configurado: {EMAIL_ADDRESS}")
-
-# Arquivo para persistência de dados (funciona no Vercel)
-VISITAS_FILE = '/tmp/visitas.json' if os.path.exists('/tmp') else 'visitas.json'
-ULTIMO_EMAIL_FILE = '/tmp/ultimo_email.json' if os.path.exists('/tmp') else 'ultimo_email.json'
-bloqueio = threading.Lock()
-
-# Função para carregar visitas do arquivo
-def carregar_visitas():
-    try:
-        if os.path.exists(VISITAS_FILE):
-            with open(VISITAS_FILE, 'r', encoding='utf-8') as f:
-                dados = json.load(f)
-                # Converter strings de tempo de volta para datetime
-                visitas = []
-                for v in dados:
-                    try:
-                        # Tentar parsear como datetime ISO
-                        if isinstance(v['tempo'], str):
-                            v['tempo'] = datetime.fromisoformat(v['tempo'].replace('Z', '+00:00'))
-                        visitas.append(v)
-                    except:
-                        continue
-                return visitas
-    except Exception as e:
-        print(f"Erro ao carregar visitas: {e}")
-    return []
-
-# Função para salvar visitas no arquivo
-def salvar_visitas(visitas):
-    try:
-        # Converter datetime para string ISO
-        dados = []
-        for v in visitas:
-            v_copy = v.copy()
-            if isinstance(v_copy['tempo'], datetime):
-                v_copy['tempo'] = v_copy['tempo'].isoformat()
-            dados.append(v_copy)
-        
-        with open(VISITAS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(dados, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"Erro ao salvar visitas: {e}")
-
-# Função para obter último email enviado
-def obter_ultimo_email_enviado():
-    try:
-        if os.path.exists(ULTIMO_EMAIL_FILE):
-            with open(ULTIMO_EMAIL_FILE, 'r', encoding='utf-8') as f:
-                dados = json.load(f)
-                if dados and 'timestamp' in dados:
-                    return datetime.fromisoformat(dados['timestamp'].replace('Z', '+00:00'))
-    except Exception as e:
-        print(f"Erro ao carregar último email: {e}")
-    return None
-
-# Função para salvar último email enviado
-def salvar_ultimo_email_enviado(timestamp):
-    try:
-        dados = {'timestamp': timestamp.isoformat()}
-        with open(ULTIMO_EMAIL_FILE, 'w', encoding='utf-8') as f:
-            json.dump(dados, f)
-    except Exception as e:
-        print(f"Erro ao salvar último email: {e}")
+if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+    print("AVISO: EMAIL NAO CONFIGURADO! Verifique o .env")
 
 # Função para obter data/hora de Brasília
 def agora_brasilia():
     brasilia_tz = pytz.timezone('America/Sao_Paulo')
     return datetime.now(brasilia_tz)
 
-# Detecção de bots: bloqueia User-Agents comuns de bots
+# Detecção de bots
 def eh_bot(user_agent_string):
     if not user_agent_string:
         return True
@@ -111,25 +37,23 @@ def eh_bot(user_agent_string):
 
 # Envia notificação imediata de visita
 def enviar_notificacao_imediata(ip, user_agent):
-    # Verifica se já enviou email nos últimos 30 segundos (evita duplicatas)
     agora = agora_brasilia()
-    ultimo_email_enviado = obter_ultimo_email_enviado()
+    ultimo_email_enviado = database.obter_ultimo_email_enviado()
     
+    # Verifica duplicatas (30 segundos)
     if ultimo_email_enviado:
-        # Converter para timezone aware se necessário
         if ultimo_email_enviado.tzinfo is None:
             brasilia_tz = pytz.timezone('America/Sao_Paulo')
             ultimo_email_enviado = brasilia_tz.localize(ultimo_email_enviado)
         
         tempo_desde_ultimo = (agora - ultimo_email_enviado).total_seconds()
         if tempo_desde_ultimo < 30:
-            print(f"DEBUG: Email enviado recentemente ({tempo_desde_ultimo:.1f}s atras), ignorando duplicata")
+            print(f"DEBUG: Email duplicado ignorado ({tempo_desde_ultimo:.1f}s)")
             return False
     
-    print("DEBUG: Função enviar_notificacao_imediata chamada")
     if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
-        print("Configuração de e-mail não encontrada. Verifique o arquivo .env")
         return False
+
     conteudo_html = f"""
     <html>
     <body>
@@ -147,85 +71,80 @@ def enviar_notificacao_imediata(ip, user_agent):
     msg['To'] = EMAIL_ADDRESS
 
     try:
-        print("DEBUG: Tentando conectar ao SMTP...")
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as servidor:
-            print("DEBUG: Iniciando TLS...")
             servidor.starttls()
-            print("DEBUG: Fazendo login...")
             servidor.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            print("DEBUG: Enviando mensagem...")
             servidor.send_message(msg)
-        print(f"[SUCESSO] NOTIFICACAO ENVIADA em {agora.strftime('%d/%m/%Y %H:%M:%S')}")
-        salvar_ultimo_email_enviado(agora)  # Registra o horário do envio
+        print(f"[SUCESSO] Notificação enviada em {agora.strftime('%d/%m/%Y %H:%M:%S')}")
+        database.salvar_ultimo_email_enviado(agora)
         return True
-    except smtplib.SMTPAuthenticationError as e:
-        print(f"[ERRO] AUTENTICACAO FALHOU: {e}")
-        print("Verifique se usou uma Senha de Aplicativo do Gmail")
-        return False
     except Exception as e:
-        print(f"[ERRO] FALHA AO ENVIAR: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"[ERRO] Falha ao enviar email: {e}")
         return False
 
-# Envia relatório diário por e-mail
+# Envia relatório diário por e-mail (MODIFICADO PARA NÃO ZERAR)
 def enviar_relatorio_diario():
     if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
-        print("Configuração de e-mail não encontrada. Verifique o arquivo .env")
         return {"error": "Email não configurado"}, 500
         
-    visitas = carregar_visitas()
+    visitas = database.carregar_visitas()
     
     if not visitas:
-        print("Nenhuma visita para relatar hoje.")
-        return {"message": "Nenhuma visita para relatar", "total": 0}, 200
+        return {"message": "Nenhuma visita registrada no total", "total": 0}, 200
     
     agora = agora_brasilia()
     
-    # Filtrar visitas de hoje
+    # Filtra visitas APENAS para exibição no relatório de "Hoje"
     visitas_hoje = []
     for visita in visitas:
         try:
-            if isinstance(visita['tempo'], str):
-                tempo_visita = datetime.fromisoformat(visita['tempo'].replace('Z', '+00:00'))
-            else:
-                tempo_visita = visita['tempo']
+            # Garante que temos um objeto datetime
+            tempo_visita = visita['tempo']
+            if isinstance(tempo_visita, str):
+                tempo_visita = datetime.fromisoformat(tempo_visita.replace('Z', '+00:00'))
             
             if tempo_visita.date() == agora.date():
                 visitas_hoje.append(visita)
         except:
             continue
     
-    if not visitas_hoje:
-        print("Nenhuma visita de hoje para relatar.")
-        return {"message": "Nenhuma visita de hoje", "total": 0}, 200
+    total_geral = len(visitas)      # Contagem acumulada (NUNCA ZERA)
+    total_hoje = len(visitas_hoje)  # Contagem do dia
     
-    total_visitas = len(visitas_hoje)
-    detalhes_visitas = ""
-    for visita in visitas_hoje:
-        try:
+    # Monta a lista de horários de hoje
+    detalhes_visitas_hoje = ""
+    if visitas_hoje:
+        for visita in visitas_hoje:
             tempo = visita['tempo']
             if isinstance(tempo, str):
                 tempo = datetime.fromisoformat(tempo.replace('Z', '+00:00'))
-            detalhes_visitas += f"<p>Visita em: {tempo.strftime('%d/%m/%Y %H:%M:%S')}</p>"
-        except:
-            continue
+            detalhes_visitas_hoje += f"<li>{tempo.strftime('%H:%M:%S')}</li>"
+    else:
+        detalhes_visitas_hoje = "<li>Nenhuma visita hoje (até agora).</li>"
     
     conteudo_html = f"""
     <html>
     <body>
     <h2>Relatório Diário de Visitas</h2>
-    <p>Total de Visitas: {total_visitas}</p>
-    <p>Data do Relatório: {agora.strftime('%d/%m/%Y')} (Horário de Brasília)</p>
+    <p><strong>Data:</strong> {agora.strftime('%d/%m/%Y')}</p>
+    <hr>
+    <h3>Resumo</h3>
+    <ul>
+        <li><strong>Visitas Hoje:</strong> {total_hoje}</li>
+        <li><strong>Total Geral Acumulado:</strong> {total_geral}</li>
+    </ul>
     <p>Vamos torcer por uma entrevista!!</p>
 
-    <h3>Detalhes das Visitas:</h3>
-    {detalhes_visitas}
+    <h3>Detalhes das Visitas de Hoje:</h3>
+    <ul>
+        {detalhes_visitas_hoje}
+    </ul>
     </body>
     </html>
     """
+    
     msg = MIMEText(conteudo_html, 'html')
-    msg['Subject'] = 'Relatório Diário de Visitas'
+    msg['Subject'] = f'Relatório Diário - Total: {total_geral} visitas'
     msg['From'] = EMAIL_ADDRESS
     msg['To'] = EMAIL_ADDRESS
 
@@ -234,29 +153,27 @@ def enviar_relatorio_diario():
             servidor.starttls()
             servidor.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
             servidor.send_message(msg)
-        print(f"Relatório diário enviado em {agora.strftime('%d/%m/%Y %H:%M:%S')}")
         
-        # Remove visitas de hoje após enviar o relatório
-        visitas_restantes = [v for v in visitas if v not in visitas_hoje]
-        salvar_visitas(visitas_restantes)
+        print(f"Relatório enviado. Total acumulado: {total_geral}")
         
-        return {"message": "Relatório enviado com sucesso", "total": total_visitas}, 200
+        # IMPORTANTE: Não removemos mais as visitas do arquivo!
+        # A persistência é mantida integralmente no database.py
+        
+        return {"message": "Relatório enviado", "total_geral": total_geral, "hoje": total_hoje}, 200
     except Exception as e:
-        print(f"Erro ao enviar relatório diário: {e}")
+        print(f"Erro ao enviar relatório: {e}")
         return {"error": str(e)}, 500
 
 @app.route('/health')
 def health():
-    """Rota de health check para verificar se a API está funcionando"""
     return {
         "status": "ok",
-        "email_configured": bool(EMAIL_ADDRESS and EMAIL_PASSWORD),
+        "total_visitas": len(database.carregar_visitas()),
         "timestamp": agora_brasilia().strftime('%d/%m/%Y %H:%M:%S')
     }
 
 @app.route('/enviar-relatorio-diario', methods=['GET', 'POST'])
 def rota_enviar_relatorio():
-    """Rota para ser chamada pelo cron job do Vercel"""
     resultado, status = enviar_relatorio_diario()
     return resultado, status
 
@@ -267,45 +184,34 @@ def home():
         return "Acesso negado: Bots não são permitidos.", 403
     
     ip = request.remote_addr
-    agora = agora_brasilia()
     
-    with bloqueio:
-        visitas = carregar_visitas()
-        visitas.append({
-            'tempo': agora,
-            'ip': ip,
-            'user_agent': user_agent
-        })
-        salvar_visitas(visitas)
+    # Registra visita no banco de dados
+    database.salvar_visita({
+        'tempo': agora_brasilia(),
+        'ip': ip,
+        'user_agent': user_agent
+    })
     
-    # Envia notificação imediata em uma thread separada
     threading.Thread(target=enviar_notificacao_imediata, args=(ip, user_agent), daemon=True).start()
-    
     return "Bem-vindo ao NotificaSite!"
 
 @app.route('/track-visit', methods=['GET', 'POST', 'OPTIONS'])
 def track_visit():
-    """Rota alternativa para tracking de visitas, compatível com CORS"""
     user_agent = request.headers.get('User-Agent')
     if eh_bot(user_agent):
         return {"error": "Bots não são permitidos"}, 403
     
     ip = request.remote_addr
-    agora = agora_brasilia()
     
-    with bloqueio:
-        visitas = carregar_visitas()
-        visitas.append({
-            'tempo': agora,
-            'ip': ip,
-            'user_agent': user_agent
-        })
-        salvar_visitas(visitas)
+    # Registra visita no banco de dados
+    database.salvar_visita({
+        'tempo': agora_brasilia(),
+        'ip': ip,
+        'user_agent': user_agent
+    })
     
-    # Envia notificação imediata em uma thread separada
     threading.Thread(target=enviar_notificacao_imediata, args=(ip, user_agent), daemon=True).start()
-    
-    return {"status": "ok", "message": "Visita registrada com sucesso"}
+    return {"status": "ok", "message": "Visita registrada"}
 
 if __name__ == '__main__':
     app.run(debug=True)
